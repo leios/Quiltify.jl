@@ -1,0 +1,4 @@
+name = "Quiltify"
+uuid = "52f7b139-451f-46ef-a803-d182e5d52308"
+authors = ["James Schloss <jrs.schloss@gmail.com>"]
+version = "0.1.0"
