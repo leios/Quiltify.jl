@@ -2,3 +2,8 @@ name = "Quiltify"
 uuid = "52f7b139-451f-46ef-a803-d182e5d52308"
 authors = ["James Schloss <jrs.schloss@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+ImageView = "86fae568-95e7-573e-a6b2-d8a6b900c9ef"
+Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
