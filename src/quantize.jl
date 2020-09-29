@@ -1,8 +1,8 @@
 # TODO: quantization may fail if no colors for a box
 # TODO: Some boxes return negative mean colors
-# TODO: All colors are the same in the color set
 # TODO: take N most populated boxes
 # TODO: HSV colorspace?
+using DataStructures
 
 mutable struct ColorBox
     clr::Union{RGB, Nothing}
@@ -83,19 +83,21 @@ function make_octree(img, max_level)
 
 end
 
-# TODO: to be BFS instead of DFS
-function find_color_set!(colorset, box, index, color_num)
+function find_color_set!(colorset, box, color_num)
+    q = Queue{ColorBox}()
+    enqueue!(q, box)
 
-    if index[1] > color_num
-        return
-    end
+    index = 1
 
-    if box.clr != nothing
-        colorset[index[1]] = box.clr
-        index[1] += 1
-    end
-    for child in box.children
-        find_color_set!(colorset, child, index, color_num)
+    while length(q) > 0 && index <= color_num
+        temp = dequeue!(q)
+        if temp.clr != nothing
+            colorset[index] = temp.clr
+            index += 1
+        end
+        for child in temp.children
+            enqueue!(q, child)
+        end
     end
 end
 
@@ -112,7 +114,7 @@ function quantize(img, colornum)
     box = make_octree(img, max_level)
 
     colorset = [RGB(0.0, 0.0, 0.0) for i = 1:colornum]
-    find_color_set!(colorset, box, [1], colornum)
+    find_color_set!(colorset, box, colornum)
 
     for i in 1:length(img_out)
         distances = color_distance.(colorset, img_out[i])
