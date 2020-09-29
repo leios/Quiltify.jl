@@ -7,6 +7,7 @@ using DataStructures
 mutable struct ColorBox
     clr::Union{RGB, Nothing}
     children::Vector{ColorBox}
+    n::Int
     extents
 end
 
@@ -30,22 +31,23 @@ function in_box(pixel, box)
     end
 end
 
-# Inefficient function to determine quantizeable colors
-function naive_bin!(img, box)
-    count = 0.0
+# Small improvements could be made bu only iterating through elements of the
+# parent node
+function naive_bin!(img, box::ColorBox)
+    box.n = 0
 
     for pixel in img
         if in_box(pixel, box)
             if box.clr == nothing
                 box.clr = RGB(0.0)
             end
-            count += 1
+            box.n += 1
             box.clr += pixel
         end
     end
 
     if box.clr != nothing
-        box.clr /= count
+        box.clr /= box.n
     end
 end
 
@@ -56,7 +58,7 @@ function divide_octree!(img, box::ColorBox, level::Int, max_level::Int)
     end
 
     # Initializing all child boxes as parent box
-    children = [ColorBox(nothing,[],0) for i=1:8]
+    children = [ColorBox(nothing,[],0,0) for i=1:8]
     box.children = children
 
     # Creating new extents and mean for each child box
@@ -76,7 +78,7 @@ end
 function make_octree(img, max_level)
 
     # Creation of the initial octree box
-    box = ColorBox(sum(img)/(length(img)), [],
+    box = ColorBox(sum(img)/(length(img)), [], 0,
                    ((0.0, 1.0),(0.0, 1.0),(0.0, 1.0)))
 
     divide_octree!(img, box, 1, max_level)
