@@ -1,14 +1,13 @@
 # TODO: quantization may fail if no colors for a box
 # TODO: Some boxes return negative mean colors
 # TODO: All colors are the same in the color set
+# TODO: take N most populated boxes
+# TODO: HSV colorspace?
 
 mutable struct ColorBox
     clr::Union{RGB, Nothing}
     children::Vector{ColorBox}
     extents
-end
-
-function bin_pixels(img, box::ColorBox)
 end
 
 function find_extents(prev_extents, i::Int)
@@ -51,6 +50,7 @@ function naive_bin!(img, box)
 end
 
 function divide_octree!(img, box::ColorBox, level::Int, max_level::Int)
+    println(level)
     if level >= max_level
         return
     end
@@ -66,25 +66,27 @@ function divide_octree!(img, box::ColorBox, level::Int, max_level::Int)
                                    find_extents(box.extents[2],j),
                                    find_extents(box.extents[3],k))
         naive_bin!(img, children[index])
+        println(children[index].clr)
+        divide_octree!(img, children[index], level+1, max_level)
     end
 
     return box
 end
 
-function make_octree(img)
+function make_octree(img, max_level)
 
     # Creation of the initial octree box
     box = ColorBox(sum(img)/(length(img)), [],
                    ((0.0, 1.0),(0.0, 1.0),(0.0, 1.0)))
 
-    divide_octree!(img, box, 1, 3)
+    divide_octree!(img, box, 1, max_level)
 
 end
 
 # TODO: to be BFS instead of DFS
-function find_color_set(colorset, box, index, color_num)
+function find_color_set!(colorset, box, index, color_num)
 
-    if index[1] >= color_num
+    if index[1] > color_num
         return
     end
 
@@ -93,7 +95,7 @@ function find_color_set(colorset, box, index, color_num)
         index[1] += 1
     end
     for child in box.children
-        find_color_set(colorset, box, index, color_num)
+        find_color_set!(colorset, child, index, color_num)
     end
 end
 
@@ -105,16 +107,16 @@ end
 
 function quantize(img, colornum)
     img_out = copy(img)
-    box = make_octree(img)
+    max_level = ceil(Int, log2(colornum - 1)/log2(8))+1
+    println(max_level)
+    box = make_octree(img, max_level)
 
     colorset = [RGB(0.0, 0.0, 0.0) for i = 1:colornum]
-    find_color_set(colorset, box, [1], colornum)
-    println(colorset)
+    find_color_set!(colorset, box, [1], colornum)
 
     for i in 1:length(img_out)
         distances = color_distance.(colorset, img_out[i])
         _, min_element = findmin(distances)
-        #println(i, '\t', min_element, '\t', sum(distances))
         img_out[i] = colorset[min_element]
     end
 
