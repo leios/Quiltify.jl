@@ -1,5 +1,4 @@
 # TODO: quantization may fail if no colors for a box
-# TODO: Some boxes return negative mean colors
 # TODO: take N most populated boxes
 # TODO: HSV colorspace?
 using DataStructures
@@ -53,7 +52,7 @@ end
 
 function divide_octree!(img, box::ColorBox, level::Int, max_level::Int)
     println(level)
-    if level >= max_level
+    if level >= max_level || box.n <= 1
         return
     end
 
@@ -78,7 +77,7 @@ end
 function make_octree(img, max_level)
 
     # Creation of the initial octree box
-    box = ColorBox(sum(img)/(length(img)), [], 0,
+    box = ColorBox(sum(img)/(length(img)), [], length(img),
                    ((0.0, 1.0),(0.0, 1.0),(0.0, 1.0)))
 
     divide_octree!(img, box, 1, max_level)
@@ -86,8 +85,9 @@ function make_octree(img, max_level)
 end
 
 function find_color_set!(colorset, box, color_num)
-    q = Queue{ColorBox}()
-    enqueue!(q, box)
+    q = PriorityQueue(Base.Order.Reverse)
+    println(typeof(box))
+    enqueue!(q, box, box.n)
 
     index = 1
 
@@ -98,7 +98,7 @@ function find_color_set!(colorset, box, color_num)
             index += 1
         end
         for child in temp.children
-            enqueue!(q, child)
+            enqueue!(q, child, child.n)
         end
     end
 end
