@@ -3,36 +3,56 @@
 
 using StatsBase
 
-@enum Quixel_type full half quarter
-
 # TODO: enable half and quarter squares
-mutable struct Quixel
-    type::Quixel_type
-    color::Union{RGB, Nothing}
+struct Quixel
+    color::Union{Vector{RGB}, RGB}
     length::Int64
 end
 
-function quixelate(img, quixel_size; average_method=:mode)
+function quixel_to_rgb(q::Quixel)
+    out = Array{RGB,2}(undef, q.length, q.length)
 
-    out = Array{RGB}(undef, size(img)[1] - size(img)[1]%quixel_size,
-                     size(img)[2] - size(img)[2]%quixel_size)
+    out[:] .= q.color
+
+    return out
+end
+
+function quixel_to_img(quixels::Array{Quixel, 2})
+    quixel_length = quixels[1].length
+    out = Array{RGB,2}(undef, quixel_length*size(quixels)[1],
+                       quixel_length*size(quixels)[2])
+
     for i = 1:length(out)
         out[i] = RGB(0)
-    end 
+    end
 
-    offsety = floor(Int, size(img)[1]%quixel_size/2)
-    offsetx = floor(Int, size(img)[2]%quixel_size/2)
-
-    println(size(out), '\t', size(img), '\t', offsetx, '\t', offsety)
-
-    for i = offsety+quixel_size:quixel_size:size(img)[1]
-        for j = offsetx+quixel_size:quixel_size:size(img)[2]
-            #println(i, '\t', j)
-            color = mode(img[1+i - quixel_size:i, 1+j-quixel_size:j])
-            out[1+i-offsety-quixel_size:i-offsety,
-                1+j-offsetx-quixel_size:j-offsetx] .= color
+    for i = 1:size(quixels)[1]
+        for j = 2:size(quixels)[2]
+            out[1+(i-1)*quixel_length : i*quixel_length,
+                1+(j-1)*quixel_length : j*quixel_length] = 
+                    quixel_to_rgb(quixels[i,j])
         end
     end
 
     return out
+end
+
+function quixelate(img, quixel_length; average_method=:mode)
+
+    quixels = Array{Quixel, 2}(undef, floor(Int, size(img)[1]/quixel_length),
+                               floor(Int, size(img)[2]/quixel_length))
+
+    offsety = floor(Int, size(img)[1]%quixel_length/2)
+    offsetx = floor(Int, size(img)[2]%quixel_length/2)
+
+    for i = 1:size(quixels)[1]
+        for j = 1:size(quixels)[2]
+            #println(i, '\t', j)
+            color = mode(img[1+(i-1)*quixel_length : i*quixel_length,
+                             1+(j-1)*quixel_length : j*quixel_length])
+            quixels[i,j] = Quixel(color, quixel_length)
+        end
+    end
+
+    return quixel_to_img(quixels)
 end
