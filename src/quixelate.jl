@@ -27,10 +27,16 @@ function quixel_to_img(quixels::Array{Quixel, 2})
     end
 
     for i = 1:size(quixels)[1]
-        for j = 2:size(quixels)[2]
+        for j = 1:size(quixels)[2]
             out[1+(i-1)*quixel_length : i*quixel_length,
                 1+(j-1)*quixel_length : j*quixel_length] = 
                     quixel_to_rgb(quixels[i,j])
+
+            # Draw black border around quixels
+            out[1+(i-1)*quixel_length : i*quixel_length,
+                1+(j-1)*quixel_length] .= RGB(0)
+            out[1+(i-1)*quixel_length,
+                1+(j-1)*quixel_length : j*quixel_length] .= RGB(0)
         end
     end
 
@@ -47,9 +53,13 @@ function quixelate(img, quixel_length; average_method=:mode)
 
     for i = 1:size(quixels)[1]
         for j = 1:size(quixels)[2]
-            #println(i, '\t', j)
             color = mode(img[1+(i-1)*quixel_length : i*quixel_length,
                              1+(j-1)*quixel_length : j*quixel_length])
+
+            if color == RGB(0)
+                println(i,j)
+            end
+
             quixels[i,j] = Quixel(color, quixel_length)
         end
     end
